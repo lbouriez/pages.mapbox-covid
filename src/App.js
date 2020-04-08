@@ -8,8 +8,7 @@ import "./App.scss";
 // Mapbox css - needed to make tooltips work later in this article
 import "mapbox-gl/dist/mapbox-gl.css";
 
-// mapboxgl.accessToken = "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJnYXkyODBlZzczcXJzY3N0bGFodGsifQ.ORWgxWhojmAClyNQLg5mdQ";
-mapboxgl.accessToken = "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJoOGRnbjBlcnMzZXBtMHhja2hyejIifQ.xhs8LnAPRCba-8sz-J00Qw";
+mapboxgl.accessToken = process.env.MAPBOX_ACCESS_TOKEN;
 
 function App({ coords }) {
   const fetcher = (url) =>
