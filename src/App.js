@@ -123,7 +123,13 @@ function App({ coords }) {
 
         let lastId;
 
-        map.on("mousemove", "circles", (e) => {
+        // const closePopup = () => {
+        //   lastId = undefined;
+        //   map.getCanvas().style.cursor = "";
+        //   popup.remove();
+        // };
+
+        const openPopup = (e) => {
           const id = e.features[0].properties.id;
 
           if (id !== lastId) {
@@ -166,13 +172,13 @@ function App({ coords }) {
 
             popup.setLngLat(coordinates).setHTML(HTML).addTo(map);
           }
+        };
+
+        map.on("mousemove", "circles", (e) => {
+          openPopup(e);
         });
 
-        map.on("mouseleave", "circles", function () {
-          lastId = undefined;
-          map.getCanvas().style.cursor = "";
-          popup.remove();
-        });
+        // map.on("mouseleave", "circles", () => {closePopup()});
       });
     }
   }, [data]);
