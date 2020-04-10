@@ -4,7 +4,7 @@
 
 > COVID Map using Mapbox and React
 
-- ✨ [Demo](https://mapbox-covid19.netlify.com/)
+- ✨ [Demo](http://covid.weeboo.fr/)
 - 📝 [Dev.to tutorial](https://dev.to/alemesa/how-to-create-a-covid-19-map-with-mapbox-and-react-3jgf)
 - 🖥️ [Markdown tutorial](./TUTORIAL.md)
 
@@ -13,12 +13,6 @@
 ```sh
 npm install && npm start
 ```
-
-## Demo
-
-Final result
-
-<img alt="Version" src="./screens/step_4.png" />
 
 ## Tech
 

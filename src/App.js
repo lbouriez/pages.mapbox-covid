@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import useSWR from "swr"; // React hook to fetch the data
 import lookup from "country-code-lookup"; // npm module to get ISO Code for countries
+import {isIOS} from "react-device-detect";
 import "./App.scss";
 
 // CSS impots
@@ -15,12 +16,6 @@ mapboxgl.accessToken =
 function App() {
   //#region Fetch Data
   const apiURL = "https://corona.lmao.ninja/v2";
-
-  // const historicalFetcher = (url, country, province) =>
-  //   fetch(`${url}/historical/${country}/${province != null ? province : ""}`)
-  //     .then((res) => res.json());
-
-  // const hist = await historicalFetcher(url, point.country, point.province);
 
   const mainFetcher = (url) =>
     fetch(url)
@@ -37,7 +32,7 @@ function App() {
               ],
             },
             properties: {
-              id: index, // unique identifier in this case the index
+              id: index,
               country: point.country,
               province: point.province,
               cases: point.stats.confirmed,
@@ -45,9 +40,20 @@ function App() {
             },
           };
         })
-      );
+      )
+      .then((data) => {
+        const {
+          explodedTemp: explodedData,
+          countriesTemp: countriesData,
+        } = explodeData(data);
+        return {
+          explodedData,
+          countriesData,
+          data,
+        };
+      });
 
-  const explodeData = () => {
+  const explodeData = (data) => {
     const explodedTemp = [];
     const countriesTemp = [];
     if (data) {
@@ -72,8 +78,6 @@ function App() {
           ...element,
           properties: { ...element.properties, cases: 1, deaths: 0 },
         };
-        // clonedElement.properties.cases = 1;
-        // clonedElement.properties.deaths = 0;
         for (let i = 0; i < element.properties.cases; i++) {
           const clonedElementCases = { ...clonedElement };
           explodedTemp.push(clonedElementCases);
@@ -93,11 +97,10 @@ function App() {
   };
 
   // Fetching our data with swr package
-  const { data } = useSWR(`${apiURL}/jhucsse`, mainFetcher);
-  const {
-    explodedTemp: explodedData,
-    countriesTemp: countriesData,
-  } = explodeData();
+  const { data } = useSWR(
+    `${apiURL}/jhucsse`,
+    mainFetcher
+  );
   const mapboxElRef = useRef(null); // DOM element to render map
 
   //#endregion
@@ -129,7 +132,10 @@ function App() {
 
   const addClusters = useCallback(
     (map) => {
-      if (explodedData) {
+      if (isIOS) {
+        return;// IOS doesnt work with big cluster...
+      }
+      if (data.explodedData) {
         const sourceData = {
           source: {
             id: "pointsCluster",
@@ -138,7 +144,7 @@ function App() {
             maxZoom: 4,
             data: {
               type: "FeatureCollection",
-              features: explodedData,
+              features: data.explodedData,
             },
           },
           layers: {
@@ -264,22 +270,22 @@ function App() {
         //#endregion
       }
     },
-    [explodedData]
+    [data]
   );
 
   const addData = useCallback(
     (map) => {
-      if (data && countriesData) {
+      if (data && data.countriesData) {
         const sourceData = {
           source: {
             id: "points-unclustered",
             data: {
               type: "FeatureCollection",
-              features: data,
+              features: data.data,
             },
           },
           layers: {
-            minZoom: 4,
+            minZoom: isIOS ? 0 : 4,
             maxZoom: 22,
             circle: {
               id: "points-unclustered_circle",
@@ -381,70 +387,62 @@ function App() {
           closeOnClick: true,
         });
 
-        let lastId;
-
         const openPopup = (e) => {
-          const id = e.features[0].properties.id;
+          popup.remove();
+          const { cases, deaths, country, province } = e.features[0].properties;
 
-          if (id !== lastId) {
-            lastId = id;
-            const {
-              cases,
-              deaths,
-              country,
-              province,
-            } = e.features[0].properties;
+          // Change the pointer type on mouseenter
 
-            // Change the pointer type on mouseenter
+          const coordinates = e.features[0].geometry.coordinates.slice();
+          const countryISO =
+            lookup.byCountry(country)?.iso2 || lookup.byInternet(country)?.iso2;
+          const provinceHTML =
+            province !== "null" ? `<p>Province: <b>${province}</b></p>` : "";
+          const mortalityRate = ((deaths / cases) * 100).toFixed(2);
+          const countryFlagHTML = Boolean(countryISO)
+            ? `<img src="https://www.countryflags.io/${countryISO}/flat/64.png"></img>`
+            : "";
 
-            const coordinates = e.features[0].geometry.coordinates.slice();
-            const countryISO =
-              lookup.byCountry(country)?.iso2 ||
-              lookup.byInternet(country)?.iso2;
-            const provinceHTML =
-              province !== "null" ? `<p>Province: <b>${province}</b></p>` : "";
-            const mortalityRate = ((deaths / cases) * 100).toFixed(2);
-            const countryFlagHTML = Boolean(countryISO)
-              ? `<img src="https://www.countryflags.io/${countryISO}/flat/64.png"></img>`
-              : "";
-
-            const HTML = `<p>Country: <b>${country}</b></p>
+          const HTML = `<p>Country: <b>${country}</b></p>
                 ${provinceHTML}
                 <p>Cases: <b>${cases}${
-              countriesData[country] !== undefined
-                ? ` <sup>(${countriesData[country].cases})</sup>`
-                : ""
-            }</b></p>
+                  data.countriesData[country] !== undefined
+              ? ` <sup>(${data.countriesData[country].cases})</sup>`
+              : ""
+          }</b></p>
                 <p>Deaths: <b>${deaths}${
-              countriesData[country] !== undefined
-                ? ` <sup>(${countriesData[country].deaths})</sup>`
-                : ""
-            }</b></p>
+                  data.countriesData[country] !== undefined
+              ? ` <sup>(${data.countriesData[country].deaths})</sup>`
+              : ""
+          }</b></p>
                 <p>Mortality Rate: <b>${mortalityRate}%</b></p>
                 ${countryFlagHTML}`;
 
-            // Ensure that if the map is zoomed out such that multiple
-            // copies of the feature are visible, the popup appears
-            // over the copy being pointed to.
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-            }
-
-            popup.setLngLat(coordinates).setHTML(HTML).addTo(map);
+          // Ensure that if the map is zoomed out such that multiple
+          // copies of the feature are visible, the popup appears
+          // over the copy being pointed to.
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
           }
+
+          popup.setLngLat(coordinates).setHTML(HTML).addTo(map);
         };
 
-        map.on("mousemove", sourceData.layers.circle.id, (e) => {
+        // map.on("mousemove", sourceData.layers.circle.id, (e) => {
+        //   openPopup(e);
+        // });
+
+        map.on("click", sourceData.layers.circle.id, (e) => {
           openPopup(e);
         });
         //#endregion
       }
     },
-    [data, countriesData]
+    [data]
   );
 
   useEffect(() => {
-    if (data && explodedData) {
+    if (data && data.explodedData && data.countriesData) {
       // You can store the map instance with useRef too
       const { map, geoControl } = initMap();
 
@@ -455,7 +453,7 @@ function App() {
         geoControl.trigger();
       });
     }
-  }, [data, explodedData, addClusters, addData, initMap]);
+  }, [data, addClusters, addData, initMap]);
 
   return (
     <div className="App">

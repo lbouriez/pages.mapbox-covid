@@ -10,6 +10,7 @@
     "mapbox-gl": "^1.9.1",
     "node-sass": "^4.13.1",
     "react": "^16.13.1",
+    "react-device-detect": "^1.11.14",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
     "swr": "^0.2.0"
