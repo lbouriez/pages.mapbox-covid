@@ -7,8 +7,10 @@ import "./App.scss";
 // CSS impots
 import "mapbox-gl/dist/mapbox-gl.css";
 
-mapboxgl.accessToken = "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucHY2ZTBncnIzZ24wbzc3YXNra28ifQ.9hGdFuMrqySLI5YDfw2V3w";
-// mapboxgl.accessToken = "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
+mapboxgl.accessToken =
+  process.env.NETLIFY === true
+    ? "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHVrcHowZTBjMGMzdWpzaWg2cm9rZWsifQ.7C3RW3qcrh5JvaoIMOs2lg"
+    : "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
 
 function App() {
   //#region Fetch Data
