@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
-import useSWR from "swr"; // React hook to fetch the data
+import useSWR, { mutate } from "swr"; // React hook to fetch the data
 import lookup from "country-code-lookup"; // npm module to get ISO Code for countries
 import { isIOS } from "react-device-detect";
 import "./App.scss";
+import MapboxGLButtonControl from "./MapboxGLButtonControl";
 
 // CSS impots
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -14,12 +15,17 @@ mapboxgl.accessToken =
     : "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
 
 function App() {
+  let map = useRef(null);;
+  let geoControl = useRef(null);;
+  let reloadControl = useRef(null);;
   //#region Fetch Data
-  const apiURL = "https://corona.lmao.ninja/v2";
-
   const mainFetcher = (url) =>
     fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (reloadControl && reloadControl.current) {
+          reloadControl.current.busy(true);
+        }
+        return r.json()})
       .then((data) =>
         data.map((point, index) => {
           return {
@@ -51,6 +57,13 @@ function App() {
           countriesData,
           data,
         };
+      })
+      .finally(() => {
+        console.log("Data have been refreshed");
+        if (reloadControl && reloadControl.current) {
+          setTimeout(() => {reloadControl.current.busy(false);}, 3000);
+          
+        }
       });
 
   const explodeData = (data) => {
@@ -94,27 +107,29 @@ function App() {
           explodedTemp.push(clonedElementDeaths);
         }
       });
-      console.error(countriesTemp);
       return { explodedTemp, countriesTemp };
     }
     return {};
   };
 
   // Fetching our data with swr package
-  const { data } = useSWR(`${apiURL}/jhucsse`, mainFetcher);
+  const { data } = useSWR("https://corona.lmao.ninja/v2/jhucsse", {
+    fetcher: mainFetcher,
+    refreshInterval: 86400,
+  });
   const mapboxElRef = useRef(null); // DOM element to render map
 
   //#endregion
 
   const initMap = useCallback(() => {
-    const map = new mapboxgl.Map({
+    map.current = new mapboxgl.Map({
       container: mapboxElRef.current,
       style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k",
       center: [16, 27],
       zoom: 2,
     });
 
-    const geoControl = new mapboxgl.GeolocateControl({
+    geoControl.current = new mapboxgl.GeolocateControl({
       positionOptions: {
         enableHighAccuracy: false,
         timeout: 6000,
@@ -125,11 +140,21 @@ function App() {
       trackUserLocation: true,
     });
 
-    // Add geolocate control to the map.
-    map.addControl(geoControl);
+    reloadControl.current = new MapboxGLButtonControl({
+      className: "mapbox-gl-draw_reload",
+      title: "Reload",
+      eventHandler: () => {
+        mutate("https://corona.lmao.ninja/v2/jhucsse");
+      },
+    });
 
-    return { map, geoControl };
-  }, []);
+    reloadControl.current.busy(true);
+
+    // Add geolocate control to the map.
+    map.current.addControl(new mapboxgl.NavigationControl());
+    map.current.addControl(geoControl.current);
+    map.current.addControl(reloadControl.current);
+  }, [mapboxElRef]);
 
   const circlesColor = [
     1,
@@ -229,7 +254,7 @@ function App() {
               "interpolate",
               ["linear"],
               ["get", "point_count"],
-              ...circlesRadius
+              ...circlesRadius,
             ],
             "circle-color": [
               "interpolate",
@@ -329,7 +354,7 @@ function App() {
               "interpolate",
               ["linear"],
               ["get", "cases"],
-              ...circlesRadius
+              ...circlesRadius,
             ],
             "circle-color": [
               "interpolate",
@@ -424,14 +449,14 @@ function App() {
 
   useEffect(() => {
     if (data && data.explodedData && data.countriesData) {
-      // You can store the map instance with useRef too
-      const { map, geoControl } = initMap();
+      initMap();
 
       // Call this method when the map is loaded
-      map.once("load", () => {
-        addClusters(map);
-        addData(map);
-        geoControl.trigger();
+      map.current.once("load", () => {
+        addClusters(map.current);
+        addData(map.current);
+        geoControl.current.trigger();
+        reloadControl.current.busy(false);
       });
     }
   }, [data, addClusters, addData, initMap]);
