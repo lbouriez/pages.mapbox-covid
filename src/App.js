@@ -59,7 +59,7 @@ function App() {
     if (data) {
       data.forEach((element) => {
         // We calculate the total / country if the country has a province
-        if (element.properties.province) {
+        if (element.properties.province || countriesTemp[element.properties.country]) {
           if (!countriesTemp[element.properties.country]) {
             countriesTemp[element.properties.country] = {
               country: element.properties.country,
@@ -91,6 +91,7 @@ function App() {
           explodedTemp.push(clonedElementDeaths);
         }
       });
+      console.error(countriesTemp);
       return { explodedTemp, countriesTemp };
     }
     return {};
