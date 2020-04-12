@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import useSWR from "swr"; // React hook to fetch the data
 import lookup from "country-code-lookup"; // npm module to get ISO Code for countries
-import {isIOS} from "react-device-detect";
+import { isIOS } from "react-device-detect";
 import "./App.scss";
 
 // CSS impots
@@ -59,7 +59,10 @@ function App() {
     if (data) {
       data.forEach((element) => {
         // We calculate the total / country if the country has a province
-        if (element.properties.province || countriesTemp[element.properties.country]) {
+        if (
+          element.properties.province ||
+          countriesTemp[element.properties.country]
+        ) {
           if (!countriesTemp[element.properties.country]) {
             countriesTemp[element.properties.country] = {
               country: element.properties.country,
@@ -98,10 +101,7 @@ function App() {
   };
 
   // Fetching our data with swr package
-  const { data } = useSWR(
-    `${apiURL}/jhucsse`,
-    mainFetcher
-  );
+  const { data } = useSWR(`${apiURL}/jhucsse`, mainFetcher);
   const mapboxElRef = useRef(null); // DOM element to render map
 
   //#endregion
@@ -131,10 +131,54 @@ function App() {
     return { map, geoControl };
   }, []);
 
+  const circlesColor = [
+    1,
+    "#ffffb2",
+    5000,
+    "#fed976",
+    10000,
+    "#feb24c",
+    25000,
+    "#fd8d3c",
+    50000,
+    "#fc4e2a",
+    75000,
+    "#e31a1c",
+    100000,
+    "#b10026",
+    200000,
+    "#80001c",
+    300000,
+    "#e60000",
+    500000,
+    "#ba0a0f",
+  ];
+
+  const circlesRadius = [
+    1,
+    6,
+    1000,
+    10,
+    5000,
+    12,
+    10000,
+    16,
+    20000,
+    20,
+    100000,
+    25,
+    200000,
+    29,
+    300000,
+    34,
+    500000,
+    40,
+  ];
+
   const addClusters = useCallback(
     (map) => {
       if (isIOS) {
-        return;// IOS doesnt work with big cluster...
+        return; // IOS doesnt work with big cluster...
       }
       if (data.explodedData) {
         const sourceData = {
@@ -185,45 +229,13 @@ function App() {
               "interpolate",
               ["linear"],
               ["get", "point_count"],
-              1,
-              4,
-              1000,
-              8,
-              4000,
-              10,
-              8000,
-              14,
-              12000,
-              18,
-              100000,
-              22,
-              200000,
-              27,
-              300000,
-              40,
+              ...circlesRadius
             ],
             "circle-color": [
               "interpolate",
               ["linear"],
               ["get", "point_count"],
-              1,
-              "#ffffb2",
-              5000,
-              "#fed976",
-              10000,
-              "#feb24c",
-              25000,
-              "#fd8d3c",
-              50000,
-              "#fc4e2a",
-              75000,
-              "#e31a1c",
-              100000,
-              "#b10026",
-              200000,
-              "#80001c",
-              300000,
-              "#e60000",
+              ...circlesColor,
             ],
           },
         });
@@ -271,7 +283,7 @@ function App() {
         //#endregion
       }
     },
-    [data]
+    [data, circlesColor, circlesRadius]
   );
 
   const addData = useCallback(
@@ -317,45 +329,13 @@ function App() {
               "interpolate",
               ["linear"],
               ["get", "cases"],
-              1,
-              4,
-              1000,
-              8,
-              4000,
-              10,
-              8000,
-              14,
-              12000,
-              18,
-              100000,
-              22,
-              200000,
-              27,
-              300000,
-              40,
+              ...circlesRadius
             ],
             "circle-color": [
               "interpolate",
               ["linear"],
               ["get", "cases"],
-              1,
-              "#ffffb2",
-              5000,
-              "#fed976",
-              10000,
-              "#feb24c",
-              25000,
-              "#fd8d3c",
-              50000,
-              "#fc4e2a",
-              75000,
-              "#e31a1c",
-              100000,
-              "#b10026",
-              200000,
-              "#80001c",
-              300000,
-              "#e60000",
+              ...circlesColor,
             ],
           },
         });
@@ -407,12 +387,12 @@ function App() {
           const HTML = `<p>Country: <b>${country}</b></p>
                 ${provinceHTML}
                 <p>Cases: <b>${cases}${
-                  data.countriesData[country] !== undefined
+            data.countriesData[country] !== undefined
               ? ` <sup>(${data.countriesData[country].cases})</sup>`
               : ""
           }</b></p>
                 <p>Deaths: <b>${deaths}${
-                  data.countriesData[country] !== undefined
+            data.countriesData[country] !== undefined
               ? ` <sup>(${data.countriesData[country].deaths})</sup>`
               : ""
           }</b></p>
@@ -439,7 +419,7 @@ function App() {
         //#endregion
       }
     },
-    [data]
+    [data, circlesColor, circlesRadius]
   );
 
   useEffect(() => {
