@@ -3,6 +3,7 @@ import FetchData from "./Components/Data";
 import Map from "./Components/Map";
 import LayerCluster from "./Components/LayerCluster";
 import LayerUnClustered from "./Components/LayerUnClustered";
+import ServiceWorkerWrapper from "./Components/ServiceWorkerWrapper"
 
 // CSS impots
 import "./App.scss";
@@ -62,6 +63,7 @@ function App() {
         {/* Assigned Mapbox container */}
         <div className="mapBox" ref={mapboxElRef} />
       </div>
+      <ServiceWorkerWrapper/>
     </div>
   );
 }
