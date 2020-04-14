@@ -24,7 +24,7 @@ function Map() {
     if (!isLoaded && map === null) {
       const mapTemp = new mapboxgl.Map({
         container: mapboxElRef.current,
-        style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k?optimize=true",
+        style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k",
         center: [longitude, latitude],
         zoom: zoom,
       });
