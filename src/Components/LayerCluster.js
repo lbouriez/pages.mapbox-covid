@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { isIOS } from "react-device-detect";
+import { isMobile } from "react-device-detect";
 
 function LayerCluster({
   map,
@@ -15,7 +15,12 @@ function LayerCluster({
   const [isLayerAdded, setIsLayerAdded] = useState(false);
 
   const addSource = useCallback(() => {
-    if (!isSourceAdded && dataExploded && dataExploded.length > 0 && isMapLoaded) {
+    if (
+      !isSourceAdded &&
+      dataExploded &&
+      dataExploded.length > 0 &&
+      isMapLoaded
+    ) {
       map.addSource(sourceId, {
         type: "geojson",
         data: {
@@ -111,18 +116,18 @@ function LayerCluster({
     circlesRadius,
   ]);
 
-/**
+  /**
    * Add the source
    */
   useEffect(() => {
-    if (isMapLoaded && !isSourceAdded) {
+    if (isMobile) {
+      console.info("LayerCluster - The layer won't be added on mobile devices");
+      return;
+    }
+    if (isMapLoaded && !isSourceAdded && !isMobile) {
       addSource();
     }
-  }, [
-    isMapLoaded,
-    addSource,
-    isSourceAdded
-  ]);
+  }, [isMapLoaded, addSource, isSourceAdded]);
 
   /**
    * Add the layer
@@ -131,12 +136,7 @@ function LayerCluster({
     if (isMapLoaded && isSourceAdded && !isLayerAdded) {
       addLayer();
     }
-  }, [
-    isLayerAdded,
-    addLayer,
-    isSourceAdded,
-    isMapLoaded,
-  ]);
+  }, [isLayerAdded, addLayer, isSourceAdded, isMapLoaded]);
 
   /**
    * Update the data source
@@ -146,14 +146,10 @@ function LayerCluster({
       map.getSource(sourceId).setData({
         type: "FeatureCollection",
         features: dataExploded,
-      },);
+      });
       console.info("LayerCluster - The data source has been refreshed");
     }
-  }, [
-    map,
-    isLayerMounted,
-    dataExploded,
-  ]);
+  }, [map, isLayerMounted, dataExploded]);
 
   /**
    * Set to mounted
@@ -163,11 +159,7 @@ function LayerCluster({
       setIsLayerMounted(true);
       console.info("LayerCluster - The layer cluster has been mounted");
     }
-  }, [
-    isLayerMounted,
-    isSourceAdded,
-    isLayerAdded,
-  ]);
+  }, [isLayerMounted, isSourceAdded, isLayerAdded]);
 }
 
 LayerCluster.propTypes = {
