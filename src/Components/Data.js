@@ -4,6 +4,12 @@ import useSWR, { mutate } from "swr";
 function FetchData() {
   const keyApi = "https://corona.lmao.ninja/v2/jhucsse";
 
+  const getCountriesException = () => {
+    const tmp = [];
+    tmp["Holy See"] = "Italy";
+
+    return tmp;
+  };
   const [data, setData] = useState([]);
   const [dataCountries, setDataCountries] = useState([]);
 
@@ -15,22 +21,23 @@ function FetchData() {
 
   const onFetchSuccess = (data, key, config) => {
     console.info("FetchData - Data have been fecthed");
-    
+
     // We map the data in a better format
     const countriesTemp = [];
     setData(
       data.map((point, index) => {
         //#region Country calculation
-        if (point.province || countriesTemp[point.country]) {
-          if (!countriesTemp[point.country]) {
-            countriesTemp[point.country] = {
-              country: point.country,
+        if (point.province || countriesTemp[point.country] || getCountriesException()[point.country]) {
+          const country = getCountriesException()[point.country]?getCountriesException()[point.country]:point.country;
+          if (!countriesTemp[country]) {
+            countriesTemp[country] = {
+              country: country,
               cases: point.stats.confirmed,
               deaths: point.stats.deaths,
             };
           } else {
-            countriesTemp[point.country].cases += point.stats.confirmed;
-            countriesTemp[point.country].deaths += point.stats.deaths;
+            countriesTemp[country].cases += point.stats.confirmed;
+            countriesTemp[country].deaths += point.stats.deaths;
           }
         }
         //#endregion

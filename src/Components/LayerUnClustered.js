@@ -39,6 +39,7 @@ function LayerUnClustered({
         source: sourceId,
         minzoom: 4,
         maxzoom: 22,
+        filter: ["all",["has", "cases"], ['!=', 'country', 'Holy See']],
         paint: {
           "circle-opacity": 0.75,
           "circle-stroke-width": 1,
@@ -63,7 +64,7 @@ function LayerUnClustered({
         source: sourceId,
         minzoom: 4,
         maxzoom: 22,
-        filter: ["has", "cases"],
+        filter: ["all",["has", "cases"], ['!=', 'country', 'Holy See']],
         layout: {
           "text-field": "{cases}",
           "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
