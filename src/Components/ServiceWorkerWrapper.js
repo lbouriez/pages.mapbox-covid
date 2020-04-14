@@ -28,7 +28,7 @@ const ServiceWorkerWrapper = () => {
       open={showReload}
       message="A new version is available!"
       onClick={reloadPage}
-      anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       action={
         <Button
           color="inherit"

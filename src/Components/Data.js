@@ -16,7 +16,7 @@ function FetchData() {
 
   const onFetchSuccess = (data, key, config) => {
     console.info("FetchData - Data have been fecthed");
-console.error("THIS IS THE NEW APP TEST");
+    
     // We map the data in a better format
     const explodedTemp = [];
     const countriesTemp = [];
