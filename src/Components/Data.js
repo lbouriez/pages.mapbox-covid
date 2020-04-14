@@ -86,14 +86,14 @@ function FetchData() {
     refreshInterval: 86400,
     onSuccess: onFetchSuccess,
     onError: onFetchError,
-    revalidateOnFocus: false
+    revalidateOnFocus: false,
   });
 
   const reValidate = () => {
     mutate(keyApi);
   };
 
-  return {data, dataExploded, dataCountries, reValidate};
+  return { data, dataExploded, dataCountries, reValidate };
 }
 
 export default FetchData;

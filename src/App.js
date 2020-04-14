@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React from "react";
 import FetchData from "./Components/Data";
 import Map from "./Components/Map";
 import LayerCluster from "./Components/LayerCluster";
@@ -51,11 +51,10 @@ function App() {
     500000,
     40,
   ];
-  const mapboxElRef = useRef(null);
-  const { map, isMounted: isMapMounted } = Map({ mapboxElRef });
+  const { map, isLoaded: isMapLoaded, mapboxElRef } = Map();
   const { data, dataExploded, dataCountries } = FetchData();
-  LayerCluster({map, dataExploded, circlesColor, circlesRadius, isMapMounted});
-  LayerUnClustered({map, data, dataCountries, circlesColor, circlesRadius, isMapMounted});
+  LayerCluster({map, dataExploded, circlesColor, circlesRadius, isMapLoaded});
+  LayerUnClustered({map, data, dataCountries, circlesColor, circlesRadius, isMapLoaded});
 
   return (
     <div className="App">

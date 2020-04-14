@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
-import PropTypes from "prop-types";
 import MapboxGLButtonControl from "./MapboxGLButtonControl";
 import { mutate } from "swr";
 
@@ -11,8 +10,9 @@ mapboxgl.accessToken =
     ? "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHVrcHowZTBjMGMzdWpzaWg2cm9rZWsifQ.7C3RW3qcrh5JvaoIMOs2lg"
     : "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
 
-function Map({mapboxElRef}) {
-  const [isMounted, setIsMounted] = useState(false);
+function Map() {
+  const mapboxElRef = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [longitude, setLongitude] = useState(16);
   const [latitude, setLatitude] = useState(27);
   const [zoom, setZoom] = useState(2);
@@ -21,7 +21,7 @@ function Map({mapboxElRef}) {
   const [reloadControl, setReloadControl] = useState(null);
 
   useEffect(() => {
-    if (!isMounted && map === null) {
+    if (!isLoaded && map === null) {
       const mapTemp = new mapboxgl.Map({
         container: mapboxElRef.current,
         style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k",
@@ -51,17 +51,17 @@ function Map({mapboxElRef}) {
       mapTemp.addControl(new mapboxgl.NavigationControl());
       mapTemp.addControl(geoControlTemp);
       mapTemp.addControl(reloadControlTemp);
-      mapTemp.once("load", () => {
-        setIsMounted(true);
-        geoControlTemp.trigger();
-      });
       setGeoControl(geoControl);
       setReloadControl(reloadControlTemp);
       setMap(mapTemp);
+      mapTemp.once("load", () => {
+        setIsLoaded(true);
+        geoControlTemp.trigger();
+      });
       
       console.info("Map - The map has been initialized");
     }
-  }, [mapboxElRef, latitude, longitude, zoom, map, geoControl, isMounted, reloadControl]);
+  }, [mapboxElRef, latitude, longitude, zoom, map, geoControl, isLoaded, reloadControl]);
 
   return {
     map,
@@ -72,14 +72,9 @@ function Map({mapboxElRef}) {
     setLongitude,
     setLatitude,
     setZoom,
-    isMounted
+    isLoaded,
+    mapboxElRef,
   };
 }
-
-Map.propTypes = {
-  mapboxElRef: PropTypes.shape({
-    current: PropTypes.object.isRequired,
-  }).isRequired,
-};
 
 export default Map;

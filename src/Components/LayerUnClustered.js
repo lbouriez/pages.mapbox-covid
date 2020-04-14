@@ -10,15 +10,16 @@ function LayerUnClustered({
   dataCountries,
   circlesColor,
   circlesRadius,
-  isMapMounted = false,
+  isMapLoaded = false,
 }) {
-  const [isMounted, setIsMounted] = useState(false);
+  const sourceId = "LayerUnClustered";
+  const [isLayerMounted, setIsLayerMounted] = useState(false);
   const [isSourceAdded, setIsSourceAdded] = useState(false);
   const [isLayerAdded, setIsLayerAdded] = useState(false);
 
   const addSource = useCallback(() => {
-    if (!isSourceAdded && data && isMapMounted) {
-      map.addSource("LayerUnClustered", {
+    if (!isSourceAdded && data && isMapLoaded) {
+      map.addSource(sourceId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
@@ -29,14 +30,14 @@ function LayerUnClustered({
       console.info("LayerUnClustered - The source has been added");
       setIsSourceAdded(true);
     }
-  }, [isSourceAdded, data, map, isMapMounted]);
+  }, [isSourceAdded, data, map, isMapLoaded]);
 
   const addLayer = useCallback(() => {
     if (isSourceAdded && !isLayerAdded && map) {
       map.addLayer({
         id: "LayerUnClustered_circle-layer",
         type: "circle",
-        source: "LayerUnClustered",
+        source: sourceId,
         minzoom: isIOS ? 0 : 4,
         maxzoom: 22,
         paint: {
@@ -60,7 +61,7 @@ function LayerUnClustered({
       map.addLayer({
         id: "LayerUnClustered_count-layer",
         type: "symbol",
-        source: "LayerUnClustered",
+        source: sourceId,
         minzoom: isIOS ? 0 : 4,
         maxzoom: 22,
         filter: ["has", "cases"],
@@ -140,26 +141,62 @@ function LayerUnClustered({
     map,
   ]);
 
+  /**
+   * Add the source
+   */
   useEffect(() => {
-    if (!isMapMounted) {
-      console.warn("LayerUnClustered - The map is not mounted yet");
-      return;
-    }
-    if (!isMounted) {
+    if (isMapLoaded && !isSourceAdded) {
       addSource();
+    }
+  }, [
+    isMapLoaded,
+    addSource,
+    isSourceAdded
+  ]);
+
+  /**
+   * Add the layer
+   */
+  useEffect(() => {
+    if (isMapLoaded && isSourceAdded && !isLayerAdded) {
       addLayer();
     }
-    if (!isMounted && isSourceAdded && isLayerAdded) {
-      setIsMounted(true);
+  }, [
+    isLayerAdded,
+    addLayer,
+    isSourceAdded,
+    isMapLoaded,
+  ]);
+
+  /**
+   * Update the data source
+   */
+  useEffect(() => {
+    if (isLayerMounted) {
+      map.getSource(sourceId).setData({
+        type: "FeatureCollection",
+        features: data,
+      },);
+      console.info("LayerUnClustered - The data source has been refreshed");
+    }
+  }, [
+    map,
+    isLayerMounted,
+    data,
+  ]);
+
+  /**
+   * Set to mounted
+   */
+  useEffect(() => {
+    if (!isLayerMounted && isSourceAdded && isLayerAdded) {
+      setIsLayerMounted(true);
       console.info("LayerUnClustered - The layer cluster has been mounted");
     }
   }, [
-    isMounted,
-    addSource,
-    addLayer,
+    isLayerMounted,
     isSourceAdded,
     isLayerAdded,
-    isMapMounted,
   ]);
 }
 
@@ -169,7 +206,7 @@ LayerUnClustered.propTypes = {
   dataCountries: PropTypes.array.isRequired,
   circlesColor: PropTypes.array,
   circlesRadius: PropTypes.array,
-  isMapMounted: PropTypes.bool.isRequired,
+  isMapLoaded: PropTypes.bool.isRequired,
 };
 
 export default LayerUnClustered;

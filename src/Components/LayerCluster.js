@@ -7,15 +7,16 @@ function LayerCluster({
   dataExploded,
   circlesColor,
   circlesRadius,
-  isMapMounted = false,
+  isMapLoaded = false,
 }) {
-  const [isMounted, setIsMounted] = useState(false);
+  const sourceId = "LayerCluster";
+  const [isLayerMounted, setIsLayerMounted] = useState(false);
   const [isSourceAdded, setIsSourceAdded] = useState(false);
   const [isLayerAdded, setIsLayerAdded] = useState(false);
 
   const addSource = useCallback(() => {
-    if (!isSourceAdded && dataExploded && dataExploded.length > 0 && isMapMounted) {
-      map.addSource("LayerCluster", {
+    if (!isSourceAdded && dataExploded && dataExploded.length > 0 && isMapLoaded) {
+      map.addSource(sourceId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
@@ -29,7 +30,7 @@ function LayerCluster({
       console.info("LayerCluster - The source has been added");
       setIsSourceAdded(true);
     }
-  }, [isSourceAdded, dataExploded, map, isMapMounted]);
+  }, [isSourceAdded, dataExploded, map, isMapLoaded]);
 
   const addLayer = useCallback(() => {
     if (isSourceAdded && !isLayerAdded && map) {
@@ -37,7 +38,7 @@ function LayerCluster({
       map.addLayer({
         id: "LayerCluster_circle-layer",
         type: "circle",
-        source: "LayerCluster",
+        source: sourceId,
         filter: ["has", "point_count"],
         minzoom: 0,
         maxzoom: 4,
@@ -62,7 +63,7 @@ function LayerCluster({
       map.addLayer({
         id: "LayerCluster_count-layer",
         type: "symbol",
-        source: "LayerCluster",
+        source: sourceId,
         minzoom: 0,
         maxzoom: 4,
         filter: ["has", "point_count"],
@@ -80,7 +81,7 @@ function LayerCluster({
         });
         var clusterId = features[0].properties.cluster_id;
         map
-          .getSource("LayerCluster")
+          .getSource(sourceId)
           .getClusterExpansionZoom(clusterId, function (err, zoom) {
             if (err) return;
 
@@ -110,34 +111,62 @@ function LayerCluster({
     circlesRadius,
   ]);
 
+/**
+   * Add the source
+   */
   useEffect(() => {
-    if (!isMapMounted) {
-      console.warn("LayerCluster - The map is not mounted yet");
-      return;
-    }
-    if (!isMounted && isIOS) {
-      setIsMounted(true);
-      console.warn(
-        "LayerCluster - The layer cluster is ignored because we are on IOS..."
-      );
-    }
-    if (!isMounted) {
+    if (isMapLoaded && !isSourceAdded) {
       addSource();
+    }
+  }, [
+    isMapLoaded,
+    addSource,
+    isSourceAdded
+  ]);
+
+  /**
+   * Add the layer
+   */
+  useEffect(() => {
+    if (isMapLoaded && isSourceAdded && !isLayerAdded) {
       addLayer();
     }
-    if (!isMounted && isSourceAdded && isLayerAdded) {
-      setIsMounted(true);
-      console.info("LayerCluster - The layer cluster has been mounted");
+  }, [
+    isLayerAdded,
+    addLayer,
+    isSourceAdded,
+    isMapLoaded,
+  ]);
+
+  /**
+   * Update the data source
+   */
+  useEffect(() => {
+    if (isLayerMounted) {
+      map.getSource(sourceId).setData({
+        type: "FeatureCollection",
+        features: dataExploded,
+      },);
+      console.info("LayerCluster - The data source has been refreshed");
     }
   }, [
     map,
+    isLayerMounted,
     dataExploded,
-    isMounted,
-    addSource,
-    addLayer,
+  ]);
+
+  /**
+   * Set to mounted
+   */
+  useEffect(() => {
+    if (!isLayerMounted && isSourceAdded && isLayerAdded) {
+      setIsLayerMounted(true);
+      console.info("LayerCluster - The layer cluster has been mounted");
+    }
+  }, [
+    isLayerMounted,
     isSourceAdded,
     isLayerAdded,
-    isMapMounted,
   ]);
 }
 
