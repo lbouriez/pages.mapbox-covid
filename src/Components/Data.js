@@ -5,7 +5,6 @@ function FetchData() {
   const keyApi = "https://corona.lmao.ninja/v2/jhucsse";
 
   const [data, setData] = useState([]);
-  const [dataExploded, setDataExploded] = useState([]);
   const [dataCountries, setDataCountries] = useState([]);
 
   const mainFetcher = (url) => fetch(url).then((_) => _.json());
@@ -18,7 +17,6 @@ function FetchData() {
     console.info("FetchData - Data have been fecthed");
     
     // We map the data in a better format
-    const explodedTemp = [];
     const countriesTemp = [];
     setData(
       data.map((point, index) => {
@@ -55,28 +53,9 @@ function FetchData() {
           },
         };
         //#endregion
-        //#region Exploded data
-        let clonedElement = {
-          ...data,
-          properties: { ...data.properties, cases: 1, deaths: 0 },
-        };
-        for (let i = 0; i < data.properties.cases; i++) {
-          const clonedElementCases = { ...clonedElement };
-          explodedTemp.push(clonedElementCases);
-        }
-        clonedElement = {
-          ...data,
-          properties: { ...data.properties, cases: 0, deaths: 1 },
-        };
-        for (let i = 0; i < data.properties.deaths; i++) {
-          const clonedElementDeaths = { ...clonedElement };
-          explodedTemp.push(clonedElementDeaths);
-        }
-        //#endregion
         return data;
       })
     );
-    setDataExploded(explodedTemp);
     setDataCountries(countriesTemp);
     console.info("FetchData - Data have been parsed");
   };
@@ -93,7 +72,7 @@ function FetchData() {
     mutate(keyApi);
   };
 
-  return { data, dataExploded, dataCountries, reValidate };
+  return { data, dataCountries, reValidate };
 }
 
 export default FetchData;

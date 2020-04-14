@@ -1,10 +1,9 @@
 import { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { isMobile } from "react-device-detect";
 
 function LayerCluster({
   map,
-  dataExploded,
+  data,
   circlesColor,
   circlesRadius,
   isMapLoaded = false,
@@ -17,25 +16,30 @@ function LayerCluster({
   const addSource = useCallback(() => {
     if (
       !isSourceAdded &&
-      dataExploded &&
-      dataExploded.length > 0 &&
+      data &&
+      data.length > 0 &&
       isMapLoaded
     ) {
       map.addSource(sourceId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: dataExploded,
+          features: data,
         },
         maxzoom: 4,
         cluster: true,
         clusterMaxZoom: 3,
         clusterRadius: 50,
+        clusterProperties: {
+          "sum_cases": ["+", ["get", "cases"]],
+          "sum_deaths": ["max", ["get", "deaths"]],
+          "sum_cases_abbreviated": ["+", ["get", "cases"]],
+        }
       });
       console.info("LayerCluster - The source has been added");
       setIsSourceAdded(true);
     }
-  }, [isSourceAdded, dataExploded, map, isMapLoaded]);
+  }, [isSourceAdded, data, map, isMapLoaded]);
 
   const addLayer = useCallback(() => {
     if (isSourceAdded && !isLayerAdded && map) {
@@ -44,7 +48,7 @@ function LayerCluster({
         id: "LayerCluster_circle-layer",
         type: "circle",
         source: sourceId,
-        filter: ["has", "point_count"],
+        filter: ['==', ['get', 'cluster'], true],
         minzoom: 0,
         maxzoom: 4,
         paint: {
@@ -53,13 +57,13 @@ function LayerCluster({
           "circle-radius": [
             "interpolate",
             ["linear"],
-            ["get", "point_count"],
+            ["get", "sum_cases"],
             ...circlesRadius,
           ],
           "circle-color": [
             "interpolate",
             ["linear"],
-            ["get", "point_count"],
+            ["get", "sum_cases"],
             ...circlesColor,
           ],
         },
@@ -71,9 +75,9 @@ function LayerCluster({
         source: sourceId,
         minzoom: 0,
         maxzoom: 4,
-        filter: ["has", "point_count"],
+        filter: ['==', ['get', 'cluster'], true],
         layout: {
-          "text-field": "{point_count_abbreviated}",
+          "text-field": "{sum_cases}",
           "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
           "text-size": 12,
         },
@@ -120,11 +124,7 @@ function LayerCluster({
    * Add the source
    */
   useEffect(() => {
-    if (isMobile) {
-      console.info("LayerCluster - The layer won't be added on mobile devices");
-      return;
-    }
-    if (isMapLoaded && !isSourceAdded && !isMobile) {
+    if (isMapLoaded && !isSourceAdded) {
       addSource();
     }
   }, [isMapLoaded, addSource, isSourceAdded]);
@@ -145,11 +145,11 @@ function LayerCluster({
     if (isLayerMounted) {
       map.getSource(sourceId).setData({
         type: "FeatureCollection",
-        features: dataExploded,
+        features: data,
       });
       console.info("LayerCluster - The data source has been refreshed");
     }
-  }, [map, isLayerMounted, dataExploded]);
+  }, [map, isLayerMounted, data]);
 
   /**
    * Set to mounted
@@ -164,7 +164,7 @@ function LayerCluster({
 
 LayerCluster.propTypes = {
   map: PropTypes.object.isRequired,
-  dataExploded: PropTypes.array.isRequired,
+  data: PropTypes.array.isRequired,
   circlesColor: PropTypes.array,
   circlesRadius: PropTypes.array,
   isMapMounted: PropTypes.bool.isRequired,

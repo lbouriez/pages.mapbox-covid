@@ -2,7 +2,6 @@ import { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import lookup from "country-code-lookup";
 import mapboxgl from "mapbox-gl";
-import { isMobile } from "react-device-detect";
 
 function LayerUnClustered({
   map,
@@ -38,7 +37,7 @@ function LayerUnClustered({
         id: "LayerUnClustered_circle-layer",
         type: "circle",
         source: sourceId,
-        minzoom: isMobile ? 0 : 4,
+        minzoom: 4,
         maxzoom: 22,
         paint: {
           "circle-opacity": 0.75,
@@ -62,7 +61,7 @@ function LayerUnClustered({
         id: "LayerUnClustered_count-layer",
         type: "symbol",
         source: sourceId,
-        minzoom: isMobile ? 0 : 4,
+        minzoom: 4,
         maxzoom: 22,
         filter: ["has", "cases"],
         layout: {

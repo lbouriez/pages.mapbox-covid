@@ -53,8 +53,8 @@ function App() {
     40,
   ];
   const { map, isLoaded: isMapLoaded, mapboxElRef } = Map();
-  const { data, dataExploded, dataCountries } = FetchData();
-  LayerCluster({map, dataExploded, circlesColor, circlesRadius, isMapLoaded});
+  const { data, dataCountries } = FetchData();
+  LayerCluster({map, data, circlesColor, circlesRadius, isMapLoaded});
   LayerUnClustered({map, data, dataCountries, circlesColor, circlesRadius, isMapLoaded});
 
   return (
