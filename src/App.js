@@ -1,9 +1,10 @@
-import React, {useState} from "react";
+import React, { useState, useEffect } from "react";
 import CovidData from "./Data/CovidData";
 import MapboxGLMap from "./Components/Map";
 import ServiceWorkerWrapper from "./Components/ServiceWorkerWrapper";
 import LayerUnClustered from "./Components/LayerUnClustered";
 import LayerCluster from "./Components/LayerCluster";
+import { Snackbar } from "@material-ui/core";
 
 import "./App.scss";
 
@@ -15,6 +16,7 @@ const accessToken =
 export default function App() {
   const { data, isLoading, reLoad } = CovidData();
   const [map, setMap] = useState(null);
+  const [toast, setToast] = useState(false);
 
   const mapControls = {
     geolocate: true,
@@ -25,16 +27,38 @@ export default function App() {
     },
   };
 
+  useEffect(() => {
+    if (data && !isLoading) {
+      setToast(true);
+    }
+  }, [data, isLoading]);
+
   return (
     <div className="App">
       {data && !isLoading ? (
-        <MapboxGLMap controls={mapControls} accessToken={accessToken} setMap={setMap}>
+        <MapboxGLMap
+          controls={mapControls}
+          accessToken={accessToken}
+          setMap={setMap}
+        >
           {map && <LayerUnClustered data={data} map={map} />}
           {map && <LayerCluster data={data} map={map} />}
         </MapboxGLMap>
       ) : (
         <h1>Loading...</h1>
       )}
+
+      {map && !isLoading && (
+        <Snackbar
+          open={toast}
+          autoHideDuration={4000}
+          onClose={() => {
+            setToast(false);
+          }}
+          message="The data have been refreshed!"
+        />
+      )}
+
       <ServiceWorkerWrapper />
     </div>
   );
