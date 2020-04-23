@@ -1,13 +1,9 @@
-import { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import {circlesColor, circlesRadius} from "./LayersConst";
+import Log from "../Debug";
 
-function LayerCluster({
-  map,
-  data,
-  circlesColor,
-  circlesRadius,
-  isMapLoaded = false,
-}) {
+export default function LayerCluster(props) {
   const sourceId = "LayerCluster";
   const [isLayerMounted, setIsLayerMounted] = useState(false);
   const [isSourceAdded, setIsSourceAdded] = useState(false);
@@ -16,15 +12,14 @@ function LayerCluster({
   const addSource = useCallback(() => {
     if (
       !isSourceAdded &&
-      data &&
-      data.length > 0 &&
-      isMapLoaded
+      props.data &&
+      props.data.length > 0
     ) {
-      map.addSource(sourceId, {
+      props.map.addSource(sourceId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: data,
+          features: props.data,
         },
         maxzoom: 4,
         cluster: true,
@@ -36,15 +31,15 @@ function LayerCluster({
           "sum_cases_abbreviated": ["+", ["get", "cases"]],
         }
       });
-      console.info("LayerCluster - The source has been added");
+      Log.info("The source has been added", "LayerCluster");
       setIsSourceAdded(true);
     }
-  }, [isSourceAdded, data, map, isMapLoaded]);
+  }, [isSourceAdded, props]);
 
   const addLayer = useCallback(() => {
-    if (isSourceAdded && !isLayerAdded && map) {
+    if (isSourceAdded && !isLayerAdded && props.map) {
       //#region Then the layers
-      map.addLayer({
+      props.map.addLayer({
         id: "LayerCluster_circle-layer",
         type: "circle",
         source: sourceId,
@@ -69,7 +64,7 @@ function LayerCluster({
         },
       });
 
-      map.addLayer({
+      props.map.addLayer({
         id: "LayerCluster_count-layer",
         type: "symbol",
         source: sourceId,
@@ -84,72 +79,65 @@ function LayerCluster({
       });
       //#endregion
 
-      map.on("click", "LayerCluster_circle-layer", function (e) {
-        var features = map.queryRenderedFeatures(e.point, {
+      props.map.on("click", "LayerCluster_circle-layer", function (e) {
+        var features = props.map.queryRenderedFeatures(e.point, {
           layers: ["LayerCluster_circle-layer"],
         });
         var clusterId = features[0].properties.cluster_id;
-        map
+        props.map
           .getSource(sourceId)
           .getClusterExpansionZoom(clusterId, function (err, zoom) {
             if (err) return;
 
-            map.easeTo({
+            props.map.easeTo({
               center: features[0].geometry.coordinates,
               zoom: zoom,
             });
           });
       });
 
-      map.on("mouseenter", "LayerCluster_circle-layer", function () {
-        map.getCanvas().style.cursor = "pointer";
+      props.map.on("mouseenter", "LayerCluster_circle-layer", function () {
+        props.map.getCanvas().style.cursor = "pointer";
       });
-      map.on("mouseleave", "LayerCluster_circle-layer", function () {
-        map.getCanvas().style.cursor = "";
+      props.map.on("mouseleave", "LayerCluster_circle-layer", function () {
+        props.map.getCanvas().style.cursor = "";
       });
 
-      console.info("LayerCluster - The layer has been added");
+      Log.trace("The layer has been added", "LayerCluster");
       setIsLayerAdded(true);
     }
-  }, [
-    isSourceAdded,
-    isLayerAdded,
-    setIsLayerAdded,
-    map,
-    circlesColor,
-    circlesRadius,
-  ]);
+  }, [isSourceAdded, isLayerAdded, setIsLayerAdded, props]);
 
   /**
    * Add the source
    */
   useEffect(() => {
-    if (isMapLoaded && !isSourceAdded) {
+    if (!isSourceAdded) {
       addSource();
     }
-  }, [isMapLoaded, addSource, isSourceAdded]);
+  }, [addSource, isSourceAdded]);
 
   /**
    * Add the layer
    */
   useEffect(() => {
-    if (isMapLoaded && isSourceAdded && !isLayerAdded) {
+    if (isSourceAdded && !isLayerAdded) {
       addLayer();
     }
-  }, [isLayerAdded, addLayer, isSourceAdded, isMapLoaded]);
+  }, [isLayerAdded, addLayer, isSourceAdded]);
 
   /**
    * Update the data source
    */
   useEffect(() => {
     if (isLayerMounted) {
-      map.getSource(sourceId).setData({
+      props.map.getSource(sourceId).setData({
         type: "FeatureCollection",
-        features: data,
+        features: props.data,
       });
-      console.info("LayerCluster - The data source has been refreshed");
+      Log.info("The data source has been refreshed", "LayerCluster");
     }
-  }, [map, isLayerMounted, data]);
+  }, [props, isLayerMounted]);
 
   /**
    * Set to mounted
@@ -157,17 +145,14 @@ function LayerCluster({
   useEffect(() => {
     if (!isLayerMounted && isSourceAdded && isLayerAdded) {
       setIsLayerMounted(true);
-      console.info("LayerCluster - The layer cluster has been mounted");
+      Log.info("The layer cluster has been mounted", "LayerCluster");
     }
   }, [isLayerMounted, isSourceAdded, isLayerAdded]);
+
+  return (<></>);
 }
 
 LayerCluster.propTypes = {
   map: PropTypes.object.isRequired,
   data: PropTypes.array.isRequired,
-  circlesColor: PropTypes.array,
-  circlesRadius: PropTypes.array,
-  isMapMounted: PropTypes.bool.isRequired,
 };
-
-export default LayerCluster;

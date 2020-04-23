@@ -1,35 +1,30 @@
-import { useRef, useState, useEffect } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
+import PropTypes from "prop-types";
 import MapboxGLButtonControl from "./MapboxGLButtonControl";
-import { mutate } from "swr";
+import Log from "../Debug";
 
+import "mapbox-gl/dist/mapbox-gl.css";
 import "./Map.scss";
 
-mapboxgl.accessToken =
-  process.env.NETLIFY === true
-    ? "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHVrcHowZTBjMGMzdWpzaWg2cm9rZWsifQ.7C3RW3qcrh5JvaoIMOs2lg"
-    : "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
-
-function Map() {
-  const mapboxElRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [longitude, setLongitude] = useState(16);
-  const [latitude, setLatitude] = useState(27);
-  const [zoom, setZoom] = useState(2);
+export default function MapboxGLMap(props) {
+  mapboxgl.accessToken = props.accessToken;
   const [map, setMap] = useState(null);
-  const [geoControl, setGeoControl] = useState(null);
-  const [reloadControl, setReloadControl] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [controlsMap, setControlsMap] = useState({
+    GeoControl: null,
+    Navigation: null,
+    Reload: null,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const mapContainer = useRef(null);
 
-  useEffect(() => {
-    if (!isLoaded && map === null) {
-      const mapTemp = new mapboxgl.Map({
-        container: mapboxElRef.current,
-        style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k",
-        center: [longitude, latitude],
-        zoom: zoom,
-      });
-
-      const geoControlTemp = new mapboxgl.GeolocateControl({
+  const addGeoControl = useCallback(
+    (map, setControlsMap) => {
+      if (!map || !props.controls.geolocate) {
+        return;
+      }
+      const geoControl = new mapboxgl.GeolocateControl({
         positionOptions: {
           enableHighAccuracy: false,
           timeout: 6000,
@@ -39,42 +34,134 @@ function Map() {
         },
         trackUserLocation: true,
       });
+      map.addControl(geoControl);
+      setControlsMap((prevControlsMap) => ({
+        ...prevControlsMap,
+        GeoControl: geoControl,
+      }));
+      map.on("load", () => {
+        geoControl.trigger();
+      });
+      Log.info("The control GeoControl has been added", "Map");
+    },
+    [props.controls.geolocate]
+  );
 
-      const reloadControlTemp = new MapboxGLButtonControl({
+  const addNavigationControl = useCallback(
+    (map, setControlsMap) => {
+      if (!map || !props.controls.navigation) {
+        return;
+      }
+      const navigationControl = new mapboxgl.NavigationControl();
+      map.addControl(navigationControl);
+      setControlsMap((prevControlsMap) => ({
+        ...prevControlsMap,
+        Navigation: navigationControl,
+      }));
+      Log.info("The control Navigation has been added", "Map");
+    },
+    [props.controls.navigation]
+  );
+
+  const addReloadControl = useCallback(
+    (map, setControlsMap) => {
+      if (!map || !props.controls.reload || !props.controls.reload.status) {
+        return;
+      }
+      const reloadControl = new MapboxGLButtonControl({
         className: "mapbox-gl-draw_reload",
         title: "Reload",
-        eventHandler: () => {
-          mutate("https://corona.lmao.ninja/v2/jhucsse");
-        },
+        eventHandler: props.controls.reload.eventHandler(),
       });
 
-      mapTemp.addControl(new mapboxgl.NavigationControl());
-      mapTemp.addControl(geoControlTemp);
-      mapTemp.addControl(reloadControlTemp);
-      setGeoControl(geoControl);
-      setReloadControl(reloadControlTemp);
-      setMap(mapTemp);
-      mapTemp.once("load", () => {
-        setIsLoaded(true);
-        geoControlTemp.trigger();
-      });
-      
-      console.info("Map - The map has been initialized");
+      map.addControl(reloadControl);
+      setControlsMap((prevControlsMap) => ({
+        ...prevControlsMap,
+        Reload: reloadControl,
+      }));
+      Log.info("The control Reload has been added", "Map");
+    },
+    [props.controls.reload]
+  );
+
+  useEffect(() => {
+    const initializeMap = ({ setMap, mapContainer }) => {
+      if (!isLoading) {
+        setIsLoading(true);
+        const map = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: "mapbox://styles/notalemesa/ck8dqwdum09ju1ioj65e3ql3k",
+          center: [props.longitude, props.latitude],
+          zoom: props.zoom,
+        });
+
+        addNavigationControl(map, setControlsMap);
+        addGeoControl(map, setControlsMap);
+        addReloadControl(map, setControlsMap);
+
+        map.on("load", () => {
+          Log.trace("The map has been initialized", "Map");
+          setMap(map);
+          if (props.setMap) {
+            props.setMap(map);
+          }
+          setIsLoading(false);
+          map.resize();
+        });
+      }
+    };
+
+    if (!map) {
+      initializeMap({ setMap, mapContainer });
     }
-  }, [mapboxElRef, latitude, longitude, zoom, map, geoControl, isLoaded, reloadControl]);
-
-  return {
+    // return () => {
+    //   if (map) {
+    //     map.remove();
+    //   }
+    // };
+  }, [
     map,
-    longitude,
-    latitude,
-    zoom,
-    geoControl,
-    setLongitude,
-    setLatitude,
-    setZoom,
-    isLoaded,
-    mapboxElRef,
-  };
+    props,
+    addGeoControl,
+    addNavigationControl,
+    addReloadControl,
+    isLoading,
+  ]);
+
+  return (
+    <div className="mapContainer">
+      <div className="mapBox" ref={(el) => (mapContainer.current = el)}>
+        {props.children}
+      </div>
+    </div>
+  );
 }
 
-export default Map;
+MapboxGLMap.defaultProps = {
+  longitude: 16,
+  latitude: 27,
+  zoom: 2,
+  controls: {
+    geolocate: false,
+    navigation: false,
+    reload: {
+      status: false,
+      eventHandler: null,
+    },
+  },
+};
+
+MapboxGLMap.propTypes = {
+  longitude: PropTypes.number,
+  latitude: PropTypes.number,
+  zoom: PropTypes.number,
+  accessToken: PropTypes.string.isRequired,
+  controls: PropTypes.shape({
+    geolocate: PropTypes.bool,
+    navigation: PropTypes.bool,
+    reload: PropTypes.shape({
+      status: PropTypes.bool,
+      eventHandler: PropTypes.func,
+    }),
+  }),
+};

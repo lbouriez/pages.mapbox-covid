@@ -1,45 +1,40 @@
-import { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import lookup from "country-code-lookup";
 import mapboxgl from "mapbox-gl";
+import { circlesColor, circlesRadius } from "./LayersConst";
+import Log from "../Debug";
 
-function LayerUnClustered({
-  map,
-  data,
-  dataCountries,
-  circlesColor,
-  circlesRadius,
-  isMapLoaded = false,
-}) {
+export default function LayerUnClustered(props) {
   const sourceId = "LayerUnClustered";
   const [isLayerMounted, setIsLayerMounted] = useState(false);
   const [isSourceAdded, setIsSourceAdded] = useState(false);
   const [isLayerAdded, setIsLayerAdded] = useState(false);
 
   const addSource = useCallback(() => {
-    if (!isSourceAdded && data && isMapLoaded) {
-      map.addSource(sourceId, {
+    if (!isSourceAdded && props.data) {
+      props.map.addSource(sourceId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: data,
+          features: props.data,
         },
       });
 
-      console.info("LayerUnClustered - The source has been added");
+      Log.info("The source has been added", "LayerUnClustered");
       setIsSourceAdded(true);
     }
-  }, [isSourceAdded, data, map, isMapLoaded]);
+  }, [isSourceAdded, props]);
 
   const addLayer = useCallback(() => {
-    if (isSourceAdded && !isLayerAdded && map) {
-      map.addLayer({
+    if (isSourceAdded && !isLayerAdded && props.map) {
+      props.map.addLayer({
         id: "LayerUnClustered_circle-layer",
         type: "circle",
         source: sourceId,
         minzoom: 4,
         maxzoom: 22,
-        filter: ["all",["has", "cases"], ['!=', 'country', 'Holy See']],
+        filter: ["all", ["has", "cases"], ["!=", "country", "Holy See"]],
         paint: {
           "circle-opacity": 0.75,
           "circle-stroke-width": 1,
@@ -58,13 +53,13 @@ function LayerUnClustered({
         },
       });
 
-      map.addLayer({
+      props.map.addLayer({
         id: "LayerUnClustered_count-layer",
         type: "symbol",
         source: sourceId,
         minzoom: 4,
         maxzoom: 22,
-        filter: ["all",["has", "cases"], ['!=', 'country', 'Holy See']],
+        filter: ["all", ["has", "cases"], ["!=", "country", "Holy See"]],
         layout: {
           "text-field": "{cases}",
           "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
@@ -80,7 +75,7 @@ function LayerUnClustered({
       const openPopup = (e) => {
         popup.remove();
         const { cases, deaths, country, province } = e.features[0].properties;
-
+        const total = JSON.parse(e.features[0].properties.total);
         // Change the pointer type on mouseenter
 
         const coordinates = e.features[0].geometry.coordinates.slice();
@@ -96,14 +91,10 @@ function LayerUnClustered({
         const HTML = `<p>Country: <b>${country}</b></p>
                   ${provinceHTML}
                   <p>Cases: <b>${cases}${
-          dataCountries[country] !== undefined
-            ? ` <sup>(${dataCountries[country].cases})</sup>`
-            : ""
+          total !== undefined ? ` <sup>(${total.cases})</sup>` : ""
         }</b></p>
                   <p>Deaths: <b>${deaths}${
-          dataCountries[country] !== undefined
-            ? ` <sup>(${dataCountries[country].deaths})</sup>`
-            : ""
+          total !== undefined ? ` <sup>(${total.deaths})</sup>` : ""
         }</b></p>
                   <p>Mortality Rate: <b>${mortalityRate}%</b></p>
                   ${countryFlagHTML}`;
@@ -115,75 +106,60 @@ function LayerUnClustered({
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
 
-        popup.setLngLat(coordinates).setHTML(HTML).addTo(map);
+        popup.setLngLat(coordinates).setHTML(HTML).addTo(props.map);
       };
 
-      map.on("mouseenter", "LayerUnClustered_circle-layer", function () {
-        map.getCanvas().style.cursor = "pointer";
+      props.map.on("mouseenter", "LayerUnClustered_circle-layer", function () {
+        props.map.getCanvas().style.cursor = "pointer";
       });
-      map.on("mouseleave", "LayerUnClustered_circle-layer", function () {
-        map.getCanvas().style.cursor = "";
+      props.map.on("mouseleave", "LayerUnClustered_circle-layer", function () {
+        props.map.getCanvas().style.cursor = "";
       });
 
-      map.on("click", "LayerUnClustered_circle-layer", (e) => {
+      props.map.on("click", "LayerUnClustered_circle-layer", (e) => {
         openPopup(e);
       });
 
-      console.info("LayerUnClustered - The layer has been added");
+      Log.trace("The layer has been added", "LayerUnClustered");
       setIsLayerAdded(true);
     }
   }, [
-    circlesColor,
-    circlesRadius,
-    dataCountries,
+    // dataCountries,
     isLayerAdded,
     isSourceAdded,
-    map,
+    props,
   ]);
 
   /**
    * Add the source
    */
   useEffect(() => {
-    if (isMapLoaded && !isSourceAdded) {
+    if (!isSourceAdded) {
       addSource();
     }
-  }, [
-    isMapLoaded,
-    addSource,
-    isSourceAdded
-  ]);
+  }, [addSource, isSourceAdded]);
 
   /**
    * Add the layer
    */
   useEffect(() => {
-    if (isMapLoaded && isSourceAdded && !isLayerAdded) {
+    if (isSourceAdded && !isLayerAdded) {
       addLayer();
     }
-  }, [
-    isLayerAdded,
-    addLayer,
-    isSourceAdded,
-    isMapLoaded,
-  ]);
+  }, [isLayerAdded, addLayer, isSourceAdded]);
 
   /**
    * Update the data source
    */
   useEffect(() => {
     if (isLayerMounted) {
-      map.getSource(sourceId).setData({
+      props.map.getSource(sourceId).setData({
         type: "FeatureCollection",
-        features: data,
-      },);
-      console.info("LayerUnClustered - The data source has been refreshed");
+        features: props.data,
+      });
+      Log.info("The data source has been refreshed", "LayerUnClustered");
     }
-  }, [
-    map,
-    isLayerMounted,
-    data,
-  ]);
+  }, [isLayerMounted, props]);
 
   /**
    * Set to mounted
@@ -191,22 +167,14 @@ function LayerUnClustered({
   useEffect(() => {
     if (!isLayerMounted && isSourceAdded && isLayerAdded) {
       setIsLayerMounted(true);
-      console.info("LayerUnClustered - The layer cluster has been mounted");
+      Log.info("The layer cluster has been mounted", "LayerUnClustered");
     }
-  }, [
-    isLayerMounted,
-    isSourceAdded,
-    isLayerAdded,
-  ]);
+  }, [isLayerMounted, isSourceAdded, isLayerAdded]);
+
+  return <></>;
 }
 
 LayerUnClustered.propTypes = {
   map: PropTypes.object.isRequired,
   data: PropTypes.array.isRequired,
-  dataCountries: PropTypes.array.isRequired,
-  circlesColor: PropTypes.array,
-  circlesRadius: PropTypes.array,
-  isMapLoaded: PropTypes.bool.isRequired,
 };
-
-export default LayerUnClustered;

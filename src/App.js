@@ -1,71 +1,41 @@
-import React from "react";
-import FetchData from "./Components/Data";
-import Map from "./Components/Map";
-import LayerCluster from "./Components/LayerCluster";
+import React, {useState} from "react";
+import CovidData from "./Data/CovidData";
+import MapboxGLMap from "./Components/Map";
+import ServiceWorkerWrapper from "./Components/ServiceWorkerWrapper";
 import LayerUnClustered from "./Components/LayerUnClustered";
-import ServiceWorkerWrapper from "./Components/ServiceWorkerWrapper"
+import LayerCluster from "./Components/LayerCluster";
 
-// CSS impots
 import "./App.scss";
-import "mapbox-gl/dist/mapbox-gl.css";
 
-function App() {
-  const circlesColor = [
-    1,
-    "#ffffb2",
-    5000,
-    "#fed976",
-    10000,
-    "#feb24c",
-    25000,
-    "#fd8d3c",
-    50000,
-    "#fc4e2a",
-    75000,
-    "#e31a1c",
-    100000,
-    "#b10026",
-    200000,
-    "#80001c",
-    300000,
-    "#e60000",
-    500000,
-    "#ba0a0f",
-  ];
-  const circlesRadius = [
-    1,
-    6,
-    1000,
-    10,
-    5000,
-    12,
-    10000,
-    16,
-    20000,
-    20,
-    100000,
-    25,
-    200000,
-    29,
-    300000,
-    34,
-    500000,
-    40,
-  ];
-  const { map, isLoaded: isMapLoaded, mapboxElRef } = Map();
-  const { data, dataCountries } = FetchData();
-  LayerCluster({map, data, circlesColor, circlesRadius, isMapLoaded});
-  LayerUnClustered({map, data, dataCountries, circlesColor, circlesRadius, isMapLoaded});
+const accessToken =
+  process.env.NETLIFY === true
+    ? "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHVrcHowZTBjMGMzdWpzaWg2cm9rZWsifQ.7C3RW3qcrh5JvaoIMOs2lg"
+    : "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHJucWRucjBnaTYzaW4wMWJkYWtna3IifQ.UpQnfoFjE3JFKhQjcIZqFQ";
+
+export default function App() {
+  const { data, isLoading, reLoad } = CovidData();
+  const [map, setMap] = useState(null);
+
+  const mapControls = {
+    geolocate: true,
+    navigation: true,
+    reload: {
+      status: true,
+      eventHandler: () => reLoad,
+    },
+  };
 
   return (
     <div className="App">
-      <div className="mapContainer">
-        {/* Assigned Mapbox container */}
-        <div className="mapBox" ref={mapboxElRef} />
-      </div>
-      <ServiceWorkerWrapper/>
+      {data && !isLoading ? (
+        <MapboxGLMap controls={mapControls} accessToken={accessToken} setMap={setMap}>
+          {map && <LayerUnClustered data={data} map={map} />}
+          {map && <LayerCluster data={data} map={map} />}
+        </MapboxGLMap>
+      ) : (
+        <h1>Loading...</h1>
+      )}
+      <ServiceWorkerWrapper />
     </div>
   );
 }
-
-export default App;
