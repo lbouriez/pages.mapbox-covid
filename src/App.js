@@ -8,6 +8,11 @@ import { Snackbar } from "@material-ui/core";
 
 import "./App.scss";
 
+// declare var process : {
+//   env: {
+//     NETLIFY: boolean
+//   }
+// }
 const accessToken =
   process.env.NETLIFY === true
     ? "pk.eyJ1Ijoid2VlYm9vIiwiYSI6ImNrOHVrcHowZTBjMGMzdWpzaWg2cm9rZWsifQ.7C3RW3qcrh5JvaoIMOs2lg"

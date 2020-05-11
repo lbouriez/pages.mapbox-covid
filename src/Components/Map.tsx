@@ -7,17 +7,33 @@ import Log from "../Debug";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "./Map.scss";
 
-export default function MapboxGLMap(props) {
+type MapboxGLMapProps = {
+  longitude: number,
+  latitude: number,
+  zoom: number,
+  accessToken: string,
+  setMap: Function,
+  controls: {
+    geolocate: boolean,
+    navigation: boolean,
+    reload: {
+      status: boolean,
+      eventHandler: Function
+    },
+  }
+}
+
+export default function MapboxGLMap(props: React.PropsWithChildren<MapboxGLMapProps>) {
   mapboxgl.accessToken = props.accessToken;
-  const [map, setMap] = useState(null);
+  const [map, setMap] = useState<mapboxgl.Map>();
   // eslint-disable-next-line no-unused-vars
-  const [controlsMap, setControlsMap] = useState({
+  const [, setControlsMap] = useState({
     GeoControl: null,
     Navigation: null,
     Reload: null,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const mapContainer = useRef(null);
+  const mapContainer = useRef<string | HTMLElement | null>(null);
 
   const addGeoControl = useCallback(
     (map, setControlsMap) => {
@@ -35,7 +51,7 @@ export default function MapboxGLMap(props) {
         trackUserLocation: true,
       });
       map.addControl(geoControl);
-      setControlsMap((prevControlsMap) => ({
+      setControlsMap((prevControlsMap: mapboxgl.GeolocateControl) => ({
         ...prevControlsMap,
         GeoControl: geoControl,
       }));
@@ -54,7 +70,7 @@ export default function MapboxGLMap(props) {
       }
       const navigationControl = new mapboxgl.NavigationControl();
       map.addControl(navigationControl);
-      setControlsMap((prevControlsMap) => ({
+      setControlsMap((prevControlsMap: mapboxgl.GeolocateControl) => ({
         ...prevControlsMap,
         Navigation: navigationControl,
       }));
@@ -75,7 +91,7 @@ export default function MapboxGLMap(props) {
       });
 
       map.addControl(reloadControl);
-      setControlsMap((prevControlsMap) => ({
+      setControlsMap((prevControlsMap: mapboxgl.GeolocateControl) => ({
         ...prevControlsMap,
         Reload: reloadControl,
       }));
@@ -85,7 +101,7 @@ export default function MapboxGLMap(props) {
   );
 
   useEffect(() => {
-    const initializeMap = ({ setMap, mapContainer }) => {
+    const initializeMap = ({ setMap, mapContainer }: {setMap: Function, mapContainer: any}) => {
       if (!isLoading) {
         setIsLoading(true);
         const map = new mapboxgl.Map({
@@ -156,6 +172,7 @@ MapboxGLMap.propTypes = {
   latitude: PropTypes.number,
   zoom: PropTypes.number,
   accessToken: PropTypes.string.isRequired,
+  setMap: PropTypes.func.isRequired,
   controls: PropTypes.shape({
     geolocate: PropTypes.bool,
     navigation: PropTypes.bool,

@@ -2,8 +2,14 @@ import React, { useCallback, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import {circlesColor, circlesRadius} from "./LayersConst";
 import Log from "../Debug";
+import { Geometry, Feature, GeoJsonProperties } from "geojson";
 
-export default function LayerCluster(props) {
+type LayerClusterProps = {
+  map: mapboxgl.Map,
+  data: Feature<Geometry, GeoJsonProperties>[],
+}
+
+export default function LayerCluster(props: LayerClusterProps) {
   const sourceId = "LayerCluster";
   const [isLayerMounted, setIsLayerMounted] = useState(false);
   const [isSourceAdded, setIsSourceAdded] = useState(false);
@@ -25,6 +31,7 @@ export default function LayerCluster(props) {
         cluster: true,
         clusterMaxZoom: 3,
         clusterRadius: 50,
+        // @ts-ignore
         clusterProperties: {
           "sum_cases": ["+", ["get", "cases"]],
           "sum_deaths": ["max", ["get", "deaths"]],
@@ -83,13 +90,16 @@ export default function LayerCluster(props) {
         var features = props.map.queryRenderedFeatures(e.point, {
           layers: ["LayerCluster_circle-layer"],
         });
+        // @ts-ignore
         var clusterId = features[0].properties.cluster_id;
         props.map
           .getSource(sourceId)
+          // @ts-ignore
           .getClusterExpansionZoom(clusterId, function (err, zoom) {
             if (err) return;
 
             props.map.easeTo({
+              // @ts-ignore
               center: features[0].geometry.coordinates,
               zoom: zoom,
             });
@@ -131,6 +141,7 @@ export default function LayerCluster(props) {
    */
   useEffect(() => {
     if (isLayerMounted) {
+      // @ts-ignore
       props.map.getSource(sourceId).setData({
         type: "FeatureCollection",
         features: props.data,
