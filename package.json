@@ -18,7 +18,7 @@
     "json-stringify-safe": "^5.0.1",
     "lodash.uniqueid": "^4.0.1",
     "mapbox-gl": "^1.9.1",
-    "node-sass": "^4.13.1",
+    "node-sass": "^7.0.0",
     "prop-types": "^15.7.2",
     "react": "^16.13.1",
     "react-device-detect": "^1.11.14",
